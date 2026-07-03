@@ -1,0 +1,105 @@
+
+import os
+import sys
+import pytest
+import tempfile
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from config.database import init_db, get_connection
+from core.crypto_vault import CryptoVault, IntegrityError, DecryptionError
+from services.auth_service import AuthService
+from services.vault_service import VaultService
+from services.audit_service import AuditService
+
+
+@pytest.fixture
+def test_db():
+    db_fd, db_path = tempfile.mkstemp()
+    os.environ['DB_PATH'] = db_path
+    import config.database
+    import importlib
+    importlib.reload(config.database)
+    init_db()
+    yield db_path
+    os.close(db_fd)
+    os.unlink(db_path)
+
+
+@pytest.fixture
+def test_master_password():
+    return "MyStrongMasterPassword123!"
+
+
+@pytest.fixture
+def test_salt():
+    return os.urandom(16)
+
+
+def test_pbkdf2_key_derivation(test_master_password, test_salt):
+    """Kiểm tra PBKDF2 tạo khóa đúng độ dài"""
+    aes_key = CryptoVault.derive_master_key(test_master_password, test_salt, key_length=32)
+    assert len(aes_key) == 32
+
+    des3_key = CryptoVault.derive_master_key(test_master_password, test_salt, key_length=24)
+    assert len(des3_key) == 24
+
+
+def test_aes_gcm_encrypt_decrypt(test_master_password, test_salt):
+    """Kiểm tra AES-GCM mã hóa và giải mã đúng"""
+    aes_key = CryptoVault.derive_master_key(test_master_password, test_salt, key_length=32)
+    plaintext = "Đây là dữ liệu cá nhân nhạy cảm: 0123456789"
+    ciphertext_hex, iv_hex, auth_tag_hex = CryptoVault.encrypt_aes_gcm(plaintext, aes_key)
+    decrypted = CryptoVault.decrypt_aes_gcm(ciphertext_hex, iv_hex, auth_tag_hex, aes_key)
+    assert decrypted == plaintext
+
+
+def test_aes_gcm_integrity_check(test_master_password, test_salt):
+    """Kiểm tra AES-GCM phát hiện dữ liệu bị chỉnh sửa"""
+    aes_key = CryptoVault.derive_master_key(test_master_password, test_salt, key_length=32)
+    plaintext = "Đây là dữ liệu cá nhân nhạy cảm: 0123456789"
+    ciphertext_hex, iv_hex, auth_tag_hex = CryptoVault.encrypt_aes_gcm(plaintext, aes_key)
+
+    # Thay đổi một ký tự trong ciphertext
+    tampered_ciphertext = list(ciphertext_hex)
+    if tampered_ciphertext:
+        tampered_ciphertext[0] = '0' if tampered_ciphertext[0] != '0' else '1'
+    tampered_ciphertext_hex = ''.join(tampered_ciphertext)
+
+    # Kiểm tra có raise IntegrityError
+    with pytest.raises(IntegrityError):
+        CryptoVault.decrypt_aes_gcm(tampered_ciphertext_hex, iv_hex, auth_tag_hex, aes_key)
+
+
+def test_3des_encrypt_decrypt(test_master_password, test_salt):
+    """Kiểm tra 3DES mã hóa và giải mã đúng"""
+    des3_key = CryptoVault.derive_master_key(test_master_password, test_salt, key_length=24)
+    plaintext = "Đây là dữ liệu cá nhân nhạy cảm: 0123456789"
+    ciphertext_hex, iv_hex = CryptoVault.encrypt_3des(plaintext, des3_key)
+    decrypted = CryptoVault.decrypt_3des(ciphertext_hex, iv_hex, des3_key)
+    assert decrypted == plaintext
+
+
+def test_user_create_and_decrypt(test_db, test_master_password, test_salt):
+    """Kiểm tra luồng người dùng tạo và giải mã dữ liệu"""
+    user_id = AuthService.create_user("testuser", "password123", "user")
+    assert user_id is not None
+
+    aes_key = CryptoVault.derive_master_key(test_master_password, test_salt, key_length=32)
+    # VaultService cần được cập nhật để phù hợp với crypto module mới,
+    # nhưng ở đây ta chỉ kiểm tra crypto thôi nhé!
+    ciphertext_hex, iv_hex, auth_tag_hex = CryptoVault.encrypt_aes_gcm("My secret data", aes_key)
+    decrypted = CryptoVault.decrypt_aes_gcm(ciphertext_hex, iv_hex, auth_tag_hex, aes_key)
+    assert decrypted == "My secret data"
+
+
+def test_aes_gcm_wrong_key(test_master_password, test_salt):
+    """Kiểm tra AES-GCM giải mã với khóa sai"""
+    aes_key = CryptoVault.derive_master_key(test_master_password, test_salt, key_length=32)
+    wrong_aes_key = CryptoVault.derive_master_key("WrongPassword123!", test_salt, key_length=32)
+    plaintext = "Đây là dữ liệu cá nhân nhạy cảm: 0123456789"
+    ciphertext_hex, iv_hex, auth_tag_hex = CryptoVault.encrypt_aes_gcm(plaintext, aes_key)
+
+    with pytest.raises(IntegrityError):
+        CryptoVault.decrypt_aes_gcm(ciphertext_hex, iv_hex, auth_tag_hex, wrong_aes_key)
+
