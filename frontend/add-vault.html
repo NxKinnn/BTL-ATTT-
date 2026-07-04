@@ -1,0 +1,147 @@
+
+&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    &lt;title&gt;Add Vault Item - FortressVault&lt;/title&gt;
+    &lt;link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"&gt;
+    &lt;link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"&gt;
+    &lt;link href="assets/css/style.css" rel="stylesheet"&gt;
+&lt;/head&gt;
+&lt;body class="bg-light"&gt;
+    &lt;div id="sidebar-container"&gt;&lt;/div&gt;
+    
+    &lt;div class="main-content"&gt;
+        &lt;div id="navbar-container"&gt;&lt;/div&gt;
+        
+        &lt;div class="p-4"&gt;
+            &lt;div class="mb-4"&gt;
+                &lt;h2 class="fw-bold mb-1"&gt;&lt;i class="fas fa-plus-circle text-primary me-2"&gt;&lt;/i&gt;Add Vault Item&lt;/h2&gt;
+                &lt;p class="text-muted mb-0"&gt;Create a new secure credential entry&lt;/p&gt;
+            &lt;/div&gt;
+            
+            &lt;div class="card shadow-sm"&gt;
+                &lt;div class="card-body p-4"&gt;
+                    &lt;form id="add-vault-form"&gt;
+                        &lt;div class="mb-3"&gt;
+                            &lt;label class="form-label fw-medium"&gt;Item Name &lt;span class="text-danger"&gt;*&lt;/span&gt;&lt;/label&gt;
+                            &lt;input type="text" class="form-control" id="item-name" required placeholder="e.g. Gmail Account"&gt;
+                        &lt;/div&gt;
+                        
+                        &lt;div class="mb-3"&gt;
+                            &lt;label class="form-label fw-medium"&gt;Username&lt;/label&gt;
+                            &lt;input type="text" class="form-control" id="username" placeholder="e.g. user@gmail.com"&gt;
+                        &lt;/div&gt;
+                        
+                        &lt;div class="mb-3"&gt;
+                            &lt;label class="form-label fw-medium"&gt;Password &lt;span class="text-danger"&gt;*&lt;/span&gt;&lt;/label&gt;
+                            &lt;div class="input-group"&gt;
+                                &lt;input type="password" class="form-control" id="password" required placeholder="Enter password"&gt;
+                                &lt;button class="btn btn-outline-secondary" type="button" onclick="togglePasswordField()"&gt;
+                                    &lt;i class="fas fa-eye"&gt;&lt;/i&gt;
+                                &lt;/button&gt;
+                                &lt;button class="btn btn-outline-primary" type="button" onclick="generatePassword()"&gt;
+                                    &lt;i class="fas fa-magic"&gt;&lt;/i&gt; Generate
+                                &lt;/button&gt;
+                            &lt;/div&gt;
+                        &lt;/div&gt;
+                        
+                        &lt;div class="mb-3"&gt;
+                            &lt;label class="form-label fw-medium"&gt;Category&lt;/label&gt;
+                            &lt;select class="form-select" id="category"&gt;
+                                &lt;option value=""&gt;Select category...&lt;/option&gt;
+                            &lt;/select&gt;
+                        &lt;/div&gt;
+                        
+                        &lt;div class="mb-4"&gt;
+                            &lt;label class="form-label fw-medium"&gt;Notes&lt;/label&gt;
+                            &lt;textarea class="form-control" id="notes" rows="4" placeholder="Additional notes..."&gt;&lt;/textarea&gt;
+                        &lt;/div&gt;
+                        
+                        &lt;div class="mb-4"&gt;
+                            &lt;label class="form-label fw-medium"&gt;Master Password &lt;span class="text-danger"&gt;*&lt;/span&gt;&lt;/label&gt;
+                            &lt;input type="password" class="form-control" id="master-password" required placeholder="Enter your master password to encrypt"&gt;
+                        &lt;/div&gt;
+                        
+                        &lt;div class="d-flex gap-2"&gt;
+                            &lt;button type="submit" class="btn btn-primary"&gt;
+                                &lt;i class="fas fa-save me-2"&gt;&lt;/i&gt;Save Item
+                            &lt;/button&gt;
+                            &lt;button type="button" class="btn btn-outline-secondary" onclick="window.location.href='vault.html'"&gt;
+                                &lt;i class="fas fa-times me-2"&gt;&lt;/i&gt;Cancel
+                            &lt;/button&gt;
+                        &lt;/div&gt;
+                    &lt;/form&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+        
+        &lt;div id="footer-container"&gt;&lt;/div&gt;
+    &lt;/div&gt;
+    
+    &lt;script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"&gt;&lt;/script&gt;
+    &lt;script src="assets/js/app.js"&gt;&lt;/script&gt;
+    &lt;script src="assets/js/components.js"&gt;&lt;/script&gt;
+    
+    &lt;script&gt;
+        let categories = [];
+        
+        document.addEventListener('DOMContentLoaded', async () =&gt; {
+            components.load('add-vault');
+            await loadCategories();
+            
+            document.getElementById('add-vault-form').addEventListener('submit', async (e) =&gt; {
+                e.preventDefault();
+                
+                const masterPassword = document.getElementById('master-password').value;
+                const selectedCategoryId = document.getElementById('category').value;
+                
+                const data = {
+                    item_name: document.getElementById('item-name').value,
+                    username: document.getElementById('username').value,
+                    password: document.getElementById('password').value,
+                    notes: document.getElementById('notes').value,
+                    category_id: selectedCategoryId ? parseInt(selectedCategoryId) : null
+                };
+                
+                loadingUtils.show();
+                try {
+                    await api.post(`/api/vault/items?master_password=${encodeURIComponent(masterPassword)}`, data);
+                    toastUtils.show('Vault item added successfully!', 'success');
+                    window.location.href = 'vault.html';
+                } catch (error) {
+                    toastUtils.show(error.message, 'error');
+                } finally {
+                    loadingUtils.hide();
+                }
+            });
+        });
+        
+        async function loadCategories() {
+            try {
+                categories = await api.get('/api/vault/categories');
+                const select = document.getElementById('category');
+                select.innerHTML = '&lt;option value=""&gt;Select category...&lt;/option&gt;' + 
+                    categories.map(cat =&gt; `&lt;option value="${cat.category_id}"&gt;${cat.category_name}&lt;/option&gt;`).join('');
+            } catch (error) {
+                toastUtils.show('Failed to load categories', 'error');
+            }
+        }
+        
+        function togglePasswordField() {
+            const input = document.getElementById('password');
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+        
+        function generatePassword() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&amp;*';
+            let password = '';
+            for (let i = 0; i &lt; 16; i++) {
+                password += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            document.getElementById('password').value = password;
+        }
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;

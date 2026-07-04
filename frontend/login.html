@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - FortressVault</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="assets/css/style.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container d-flex justify-content-center align-items-center min-vh-100">
+        <div class="card shadow-lg" style="width: 100%; max-width: 450px;">
+            <div class="card-body p-5">
+                <!-- Logo & Title -->
+                <div class="text-center mb-5">
+                    <i class="fas fa-shield-alt text-primary fa-3x mb-3"></i>
+                    <h1 class="h3 mb-1 fw-bold">FortressVault</h1>
+                    <p class="text-muted">Secure Personal Data Vault</p>
+                </div>
+                
+                <!-- Tabs -->
+                <ul class="nav nav-pills nav-justified mb-4" id="auth-tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="login-tab" data-bs-toggle="pill" data-bs-target="#login" type="button" role="tab">Login</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="register-tab" data-bs-toggle="pill" data-bs-target="#register" type="button" role="tab">Register</button>
+                    </li>
+                </ul>
+                
+                <!-- Tab Content -->
+                <div class="tab-content" id="auth-tab-content">
+                    <!-- Login Form -->
+                    <div class="tab-pane fade show active" id="login" role="tabpanel">
+                        <form id="login-form">
+                            <div class="mb-3">
+                                <label class="form-label fw-medium">Username</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                    <input type="text" class="form-control" id="login-username" required placeholder="Enter your username">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="form-label fw-medium">Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                    <input type="password" class="form-control" id="login-password" required placeholder="Enter your password">
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-100 py-2 fw-medium">
+                                <i class="fas fa-sign-in-alt me-2"></i>Login
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Register Form -->
+                    <div class="tab-pane fade" id="register" role="tabpanel">
+                        <form id="register-form">
+                            <div class="mb-3">
+                                <label class="form-label fw-medium">Username</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-user-plus"></i></span>
+                                    <input type="text" class="form-control" id="register-username" required placeholder="Choose a username">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-medium">Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-key"></i></span>
+                                    <input type="password" class="form-control" id="register-password" required placeholder="Choose a password">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="form-label fw-medium">Confirm Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                    <input type="password" class="form-control" id="register-confirm" required placeholder="Confirm your password">
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-success w-100 py-2 fw-medium">
+                                <i class="fas fa-user-plus me-2"></i>Register
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="assets/js/app.js"></script>
+    
+    <script>
+        // ====================================
+        // Login Logic
+        // ====================================
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value;
+            
+            if (!username || !password) {
+                toastUtils.show('Please enter both username and password', 'warning');
+                return;
+            }
+            
+            loadingUtils.show();
+            
+            try {
+                const formData = new URLSearchParams();
+                formData.append('username', username);
+                formData.append('password', password);
+                
+                const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Login failed');
+                }
+                
+                jwtUtils.setToken(data.access_token);
+                jwtUtils.setUser(data.user);
+                toastUtils.show('Login successful!', 'success');
+                window.location.href = 'dashboard.html';
+            } catch (error) {
+                toastUtils.show(error.message, 'error');
+            } finally {
+                loadingUtils.hide();
+            }
+        });
+        
+        // ====================================
+        // Register Logic
+        // ====================================
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('register-username').value.trim();
+            const password = document.getElementById('register-password').value;
+            const confirmPassword = document.getElementById('register-confirm').value;
+            
+            if (!username || !password) {
+                toastUtils.show('Please fill in all fields', 'warning');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                toastUtils.show('Passwords do not match', 'error');
+                return;
+            }
+            
+            if (password.length < 6) {
+                toastUtils.show('Password must be at least 6 characters', 'warning');
+                return;
+            }
+            
+            loadingUtils.show();
+            
+            try {
+                const response = await api.post('/api/auth/register', { username, password });
+                
+                toastUtils.show('Registration successful! Please login.', 'success');
+                document.getElementById('login-tab').click();
+                document.getElementById('login-username').value = username;
+            } catch (error) {
+                toastUtils.show(error.message, 'error');
+            } finally {
+                loadingUtils.hide();
+            }
+        });
+    </script>
+</body>
+</html>

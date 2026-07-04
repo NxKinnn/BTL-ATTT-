@@ -1,7 +1,10 @@
 
+"""
+Audit Service for FortressVault
+Handles logging of all security events and actions
+"""
 from typing import Optional, List, Dict, Any
-from config.database import get_connection, row_to_dict
-
+from config.database import execute_query, execute_non_query
 
 class AuditService:
     @staticmethod
@@ -11,43 +14,41 @@ class AuditService:
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None,
         action_details: Optional[str] = None
-    ):
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO audit_logs (action_id, user_id, ip_address, user_agent, action_details)
-            VALUES (?, ?, ?, ?, ?)
+    ) -> None:
+        """
+        Log an event to audit_logs table
+        """
+        execute_non_query("""
+            INSERT INTO audit_logs (action_id, user_id, ip_address, user_agent, action_details, created_at)
+            VALUES (?, ?, ?, ?, ?, GETDATE())
         """, (action_code, user_id, ip_address, user_agent, action_details))
-        conn.commit()
-        conn.close()
-
+    
     @staticmethod
-    def get_logs(user_id: Optional[int] = None, role: Optional[str] = None) -> List[Dict[str, Any]]:
-        conn = get_connection()
-        cursor = conn.cursor()
-
-        if role == 'Auditor':
-            cursor.execute("""
-                SELECT al.*, la.action_name 
-                FROM audit_logs al 
-                LEFT JOIN log_actions la ON al.action_id = la.action_id 
+    def get_logs(
+        user_id: Optional[int] = None,
+        role: Optional[str] = None,
+        limit: int = 100
+    ) -> List[Dict[str, Any]]:
+        """
+        Get audit logs based on role permissions
+        - Auditor can see all logs
+        - User can only see own logs
+        - Admin can see all logs
+        """
+        if role == "Auditor" or role == "Admin":
+            return execute_query("""
+                SELECT TOP (?) al.audit_id, al.action_id, al.user_id, al.ip_address, al.user_agent, al.action_details, al.created_at, la.action_name
+                FROM audit_logs al
+                LEFT JOIN log_actions la ON al.action_id = la.action_id
                 ORDER BY al.created_at DESC
-            """)
+            """, (limit,))
         elif user_id:
-            cursor.execute("""
-                SELECT al.*, la.action_name 
-                FROM audit_logs al 
-                LEFT JOIN log_actions la ON al.action_id = la.action_id 
-                WHERE al.user_id = ? 
+            return execute_query("""
+                SELECT TOP (?) al.audit_id, al.action_id, al.user_id, al.ip_address, al.user_agent, al.action_details, al.created_at, la.action_name
+                FROM audit_logs al
+                LEFT JOIN log_actions la ON al.action_id = la.action_id
+                WHERE al.user_id = ?
                 ORDER BY al.created_at DESC
-            """, (user_id,))
-        else:
-            return []
-
-        logs = []
-        for row in cursor.fetchall():
-            logs.append(row_to_dict(cursor, row))
-
-        conn.close()
-        return logs
+            """, (limit, user_id))
+        return []
 

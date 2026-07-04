@@ -1,7 +1,7 @@
 
 import os
 from base64 import b64encode, b64decode
-from cryptography.hazmat.primitives import hashes, padding as serialization
+from cryptography.hazmat.primitives import hashes, serialization, padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.asymmetric import rsa, padding as asym_padding
@@ -84,7 +84,7 @@ class CryptoVault:
             raise ValueError(f"3DES key must be 24 bytes long, got {len(key)}")
         
         iv = os.urandom(CryptoVault.TRIPLEDES_IV_SIZE)
-        padder = serialization.PKCS7(64).padder()  # 3DES uses 64-bit block size
+        padder = padding.PKCS7(64).padder()  # 3DES uses 64-bit block size
         padded_data = padder.update(plaintext.encode('utf-8')) + padder.finalize()
         
         encryptor = Cipher(
@@ -110,7 +110,7 @@ class CryptoVault:
             ).decryptor()
             
             padded_plaintext = decryptor.update(ciphertext) + decryptor.finalize()
-            unpadder = serialization.PKCS7(64).unpadder()
+            unpadder = padding.PKCS7(64).unpadder()
             plaintext_bytes = unpadder.update(padded_plaintext) + unpadder.finalize()
             
             return plaintext_bytes.decode('utf-8')
