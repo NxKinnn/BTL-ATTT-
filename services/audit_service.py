@@ -37,16 +37,18 @@ class AuditService:
         """
         if role == "Auditor" or role == "Admin":
             return execute_query("""
-                SELECT TOP (?) al.audit_id, al.action_id, al.user_id, al.ip_address, al.user_agent, al.action_details, al.created_at, la.action_name
+                SELECT TOP (?) al.audit_id, al.action_id, al.user_id, u.username, al.ip_address, al.user_agent, al.action_details, al.created_at, la.action_name, la.action_name as action
                 FROM audit_logs al
                 LEFT JOIN log_actions la ON al.action_id = la.action_id
+                LEFT JOIN users u ON al.user_id = u.user_id
                 ORDER BY al.created_at DESC
             """, (limit,))
         elif user_id:
             return execute_query("""
-                SELECT TOP (?) al.audit_id, al.action_id, al.user_id, al.ip_address, al.user_agent, al.action_details, al.created_at, la.action_name
+                SELECT TOP (?) al.audit_id, al.action_id, al.user_id, u.username, al.ip_address, al.user_agent, al.action_details, al.created_at, la.action_name, la.action_name as action
                 FROM audit_logs al
                 LEFT JOIN log_actions la ON al.action_id = la.action_id
+                LEFT JOIN users u ON al.user_id = u.user_id
                 WHERE al.user_id = ?
                 ORDER BY al.created_at DESC
             """, (limit, user_id))

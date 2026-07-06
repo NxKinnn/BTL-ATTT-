@@ -125,3 +125,13 @@ class AuthService:
         """Log a logout event"""
         AuditService.log_event(user_id, 9, ip_address, user_agent, f"User {username or 'unknown'} logged out")
 
+    @staticmethod
+    def get_all_users() -> list:
+        """Get list of all users with their roles (for Admin)"""
+        return execute_query("""
+            SELECT u.user_id, u.username, u.created_at, u.is_active, r.role_name
+            FROM users u
+            LEFT JOIN roles r ON u.role_id = r.role_id
+            ORDER BY u.user_id
+        """)
+

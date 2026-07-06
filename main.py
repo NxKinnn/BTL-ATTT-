@@ -67,17 +67,30 @@ class UserRegister(BaseModel):
     password: str
 
 class VaultItemCreate(BaseModel):
-    item_name: str
+    item_name: Optional[str] = "Untitled"
+    title: Optional[str] = None
+    full_name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    identity_number: Optional[str] = None
     username: Optional[str] = None
-    password: str
+    password: Optional[str] = ""
     notes: Optional[str] = None
+    note: Optional[str] = None
     category_id: Optional[int] = None
+    algorithm: Optional[str] = "AES-256-GCM"
 
 class VaultItemUpdate(BaseModel):
     item_name: Optional[str] = None
+    title: Optional[str] = None
+    full_name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    identity_number: Optional[str] = None
     username: Optional[str] = None
     password: Optional[str] = None
     notes: Optional[str] = None
+    note: Optional[str] = None
 
 # Helper Functions
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -188,6 +201,9 @@ async def get_vault_items(current_user: dict = Depends(get_current_user)):
     return VaultService.get_user_vault_items(user_id=current_user['user_id'], role=current_user['role_name'])
 
 @app.post("/api/vault/items")
+@app.post("/api/vault/create")
+@app.post("/vault/create")
+@app.post("/vault")
 async def add_vault_item(
     item: VaultItemCreate,
     master_password: str,
@@ -201,16 +217,22 @@ async def add_vault_item(
         )
     # Derive master key
     master_key = CryptoVault.derive_master_key(master_password, current_user['salt'])
+    item_title = item.title or item.item_name or "Untitled"
     vault_id = VaultService.add_vault_item(
         user_id=current_user['user_id'],
-        item_name=item.item_name,
+        item_name=item_title,
         master_key=master_key,
         username=item.username,
         password=item.password,
-        notes=item.notes,
+        notes=item.note or item.notes,
         category_id=item.category_id,
         ip_address=request.client.host if request.client else None,
-        user_agent=request.headers.get("user-agent")
+        user_agent=request.headers.get("user-agent"),
+        full_name=item.full_name,
+        email=item.email,
+        phone=item.phone,
+        identity_number=item.identity_number,
+        algorithm=item.algorithm
     )
     if not vault_id:
         raise HTTPException(
@@ -226,6 +248,11 @@ async def get_vault_item(
     request: Request,
     current_user: dict = Depends(get_current_user)
 ):
+    if current_user['role_name'] == "Admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin cannot decrypt sensitive user data by default."
+        )
     if current_user['role_name'] != "User":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -266,12 +293,16 @@ async def update_vault_item(
         role=current_user['role_name'],
         vault_id=vault_id,
         master_key=master_key,
-        item_name=item_update.item_name,
+        item_name=item_update.title or item_update.item_name,
         username=item_update.username,
         password=item_update.password,
-        notes=item_update.notes,
+        notes=item_update.note or item_update.notes,
         ip_address=request.client.host if request.client else None,
-        user_agent=request.headers.get("user-agent")
+        user_agent=request.headers.get("user-agent"),
+        full_name=item_update.full_name,
+        email=item_update.email,
+        phone=item_update.phone,
+        identity_number=item_update.identity_number
     )
     if not success:
         raise HTTPException(
@@ -309,12 +340,52 @@ async def delete_vault_item(
 async def get_categories():
     return VaultService.get_categories()
 
+# User Management Routes (Admin only)
+@app.get("/api/users")
+@app.get("/api/admin/users")
+@app.get("/users")
+async def get_all_users(current_user: dict = Depends(get_current_user)):
+    if current_user['role_name'] != "Admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to view users"
+        )
+    return AuthService.get_all_users()
+
 # Audit Log Routes
 @app.get("/api/audit/logs")
-async def get_audit_logs(current_user: dict = Depends(get_current_user)):
+@app.get("/audit/logs")
+async def get_audit_logs(request: Request, current_user: dict = Depends(get_current_user)):
+    if current_user['role_name'] not in ["Auditor", "Admin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to access system audit logs"
+        )
+    AuditService.log_event(
+        user_id=current_user['user_id'],
+        action_code=8,  # AUDIT_VIEW
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+        action_details=f"Viewed system audit logs as role {current_user['role_name']}"
+    )
+    return AuditService.get_logs(
+        user_id=None,
+        role=current_user['role_name']
+    )
+
+@app.get("/api/audit/my-activity")
+@app.get("/audit/my-activity")
+async def get_my_activity(request: Request, current_user: dict = Depends(get_current_user)):
+    AuditService.log_event(
+        user_id=current_user['user_id'],
+        action_code=8,  # AUDIT_VIEW
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+        action_details="MY_ACTIVITY_VIEW: Viewed personal activity history"
+    )
     return AuditService.get_logs(
         user_id=current_user['user_id'],
-        role=current_user['role_name']
+        role="User"
     )
 
 if __name__ == "__main__":

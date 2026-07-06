@@ -6,7 +6,66 @@
 
 const components = {
     getSidebar(currentPage) {
-        const user = jwtUtils.getUser();
+        const user = jwtUtils.getUser() || { role_name: 'User' };
+        const role = user.role_name || 'User';
+        
+        let navLinks = '';
+        if (role === 'Admin') {
+            navLinks = `
+                <a href="dashboard.html" class="nav-link ${currentPage === 'dashboard' ? 'active' : ''}">
+                    <i class="fas fa-tachometer-alt"></i> Admin Dashboard
+                </a>
+                <a href="users.html" class="nav-link ${currentPage === 'users' ? 'active' : ''}">
+                    <i class="fas fa-users"></i> Users Management
+                </a>
+                <a href="vault.html" class="nav-link ${currentPage === 'vault' ? 'active' : ''}">
+                    <i class="fas fa-lock"></i> All Vaults (Encrypted)
+                </a>
+                <a href="audit-log.html" class="nav-link ${currentPage === 'audit-log' ? 'active' : ''}">
+                    <i class="fas fa-history"></i> System Audit Log
+                </a>
+                <a href="benchmark.html" class="nav-link ${currentPage === 'benchmark' ? 'active' : ''}">
+                    <i class="fas fa-chart-bar"></i> Benchmark
+                </a>
+                <hr class="my-2 mx-3 border-secondary opacity-25">
+                <a href="profile.html" class="nav-link ${currentPage === 'profile' ? 'active' : ''}">
+                    <i class="fas fa-user-shield"></i> Profile
+                </a>
+            `;
+        } else if (role === 'Auditor') {
+            navLinks = `
+                <a href="audit-log.html" class="nav-link ${currentPage === 'audit-log' ? 'active' : ''}">
+                    <i class="fas fa-history"></i> System Audit Log
+                </a>
+                <a href="dashboard.html" class="nav-link ${currentPage === 'dashboard' ? 'active' : ''}">
+                    <i class="fas fa-tachometer-alt"></i> Auditor Dashboard
+                </a>
+                <hr class="my-2 mx-3 border-secondary opacity-25">
+                <a href="profile.html" class="nav-link ${currentPage === 'profile' ? 'active' : ''}">
+                    <i class="fas fa-user"></i> Profile
+                </a>
+            `;
+        } else {
+            navLinks = `
+                <a href="vault.html" class="nav-link ${currentPage === 'vault' ? 'active' : ''}">
+                    <i class="fas fa-key"></i> My Vault
+                </a>
+                <a href="add-vault.html" class="nav-link ${currentPage === 'add-vault' ? 'active' : ''}">
+                    <i class="fas fa-plus-circle"></i> Add Vault
+                </a>
+                <a href="audit-log.html?mode=my-activity" class="nav-link ${currentPage === 'audit-log' ? 'active' : ''}">
+                    <i class="fas fa-user-clock"></i> My Activity
+                </a>
+                <hr class="my-2 mx-3 border-secondary opacity-25">
+                <a href="profile.html" class="nav-link ${currentPage === 'profile' ? 'active' : ''}">
+                    <i class="fas fa-user"></i> Profile
+                </a>
+                <a href="settings.html" class="nav-link ${currentPage === 'settings' ? 'active' : ''}">
+                    <i class="fas fa-cog"></i> Settings
+                </a>
+            `;
+        }
+        
         return `
             <div class="sidebar" id="sidebar">
                 <div class="logo py-4 px-4 border-bottom border-secondary opacity-25">
@@ -15,28 +74,7 @@ const components = {
                 </div>
                 
                 <nav class="mt-3">
-                    <a href="dashboard.html" class="nav-link ${currentPage === 'dashboard' ? 'active' : ''}">
-                        <i class="fas fa-tachometer-alt"></i> Dashboard
-                    </a>
-                    <a href="vault.html" class="nav-link ${currentPage === 'vault' ? 'active' : ''}">
-                        <i class="fas fa-key"></i> My Vault
-                    </a>
-                    <a href="add-vault.html" class="nav-link ${currentPage === 'add-vault' ? 'active' : ''}">
-                        <i class="fas fa-plus-circle"></i> Add Vault
-                    </a>
-                    <a href="audit-log.html" class="nav-link ${currentPage === 'audit-log' ? 'active' : ''}">
-                        <i class="fas fa-history"></i> Audit Log
-                    </a>
-                    <a href="benchmark.html" class="nav-link ${currentPage === 'benchmark' ? 'active' : ''}">
-                        <i class="fas fa-chart-bar"></i> Benchmark
-                    </a>
-                    <hr class="my-2 mx-3 border-secondary opacity-25">
-                    <a href="profile.html" class="nav-link ${currentPage === 'profile' ? 'active' : ''}">
-                        <i class="fas fa-user"></i> Profile
-                    </a>
-                    <a href="settings.html" class="nav-link ${currentPage === 'settings' ? 'active' : ''}">
-                        <i class="fas fa-cog"></i> Settings
-                    </a>
+                    ${navLinks}
                 </nav>
                 
                 <div class="position-absolute bottom-0 w-100 p-3">

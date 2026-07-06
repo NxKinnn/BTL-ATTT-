@@ -1,97 +1,121 @@
-
-&lt;!DOCTYPE html&gt;
-&lt;html lang="en"&gt;
-&lt;head&gt;
-    &lt;meta charset="UTF-8"&gt;
-    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
-    &lt;title&gt;Add Vault Item - FortressVault&lt;/title&gt;
-    &lt;link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"&gt;
-    &lt;link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"&gt;
-    &lt;link href="assets/css/style.css" rel="stylesheet"&gt;
-&lt;/head&gt;
-&lt;body class="bg-light"&gt;
-    &lt;div id="sidebar-container"&gt;&lt;/div&gt;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Vault Item - FortressVault</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="assets/css/style.css?v=3" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div id="sidebar-container"></div>
     
-    &lt;div class="main-content"&gt;
-        &lt;div id="navbar-container"&gt;&lt;/div&gt;
+    <div class="main-content">
+        <div id="navbar-container"></div>
         
-        &lt;div class="p-4"&gt;
-            &lt;div class="mb-4"&gt;
-                &lt;h2 class="fw-bold mb-1"&gt;&lt;i class="fas fa-plus-circle text-primary me-2"&gt;&lt;/i&gt;Add Vault Item&lt;/h2&gt;
-                &lt;p class="text-muted mb-0"&gt;Create a new secure credential entry&lt;/p&gt;
-            &lt;/div&gt;
+        <div class="p-4">
+            <div class="mb-4">
+                <h2 class="fw-bold mb-1"><i class="fas fa-plus-circle text-primary me-2"></i>Add Vault Item</h2>
+                <p class="text-muted mb-0">Create a new secure credential or personal data entry</p>
+            </div>
             
-            &lt;div class="card shadow-sm"&gt;
-                &lt;div class="card-body p-4"&gt;
-                    &lt;form id="add-vault-form"&gt;
-                        &lt;div class="mb-3"&gt;
-                            &lt;label class="form-label fw-medium"&gt;Item Name &lt;span class="text-danger"&gt;*&lt;/span&gt;&lt;/label&gt;
-                            &lt;input type="text" class="form-control" id="item-name" required placeholder="e.g. Gmail Account"&gt;
-                        &lt;/div&gt;
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <form id="add-vault-form">
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Title / Tên bản ghi <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="item-name" required placeholder="e.g. Thông tin cá nhân demo">
+                        </div>
                         
-                        &lt;div class="mb-3"&gt;
-                            &lt;label class="form-label fw-medium"&gt;Username&lt;/label&gt;
-                            &lt;input type="text" class="form-control" id="username" placeholder="e.g. user@gmail.com"&gt;
-                        &lt;/div&gt;
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Full name / Họ tên</label>
+                            <input type="text" class="form-control" id="full-name" placeholder="e.g. Nguyễn Xuân Kiên">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Email</label>
+                            <input type="email" class="form-control" id="email" placeholder="e.g. kien.demo@gmail.com">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Phone / Số điện thoại</label>
+                            <input type="text" class="form-control" id="phone" placeholder="e.g. 0987654321">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Identity number / CCCD hoặc số giấy tờ</label>
+                            <input type="text" class="form-control" id="identity-number" placeholder="e.g. 012345678901">
+                        </div>
                         
-                        &lt;div class="mb-3"&gt;
-                            &lt;label class="form-label fw-medium"&gt;Password &lt;span class="text-danger"&gt;*&lt;/span&gt;&lt;/label&gt;
-                            &lt;div class="input-group"&gt;
-                                &lt;input type="password" class="form-control" id="password" required placeholder="Enter password"&gt;
-                                &lt;button class="btn btn-outline-secondary" type="button" onclick="togglePasswordField()"&gt;
-                                    &lt;i class="fas fa-eye"&gt;&lt;/i&gt;
-                                &lt;/button&gt;
-                                &lt;button class="btn btn-outline-primary" type="button" onclick="generatePassword()"&gt;
-                                    &lt;i class="fas fa-magic"&gt;&lt;/i&gt; Generate
-                                &lt;/button&gt;
-                            &lt;/div&gt;
-                        &lt;/div&gt;
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Username (Optional)</label>
+                            <input type="text" class="form-control" id="username" placeholder="e.g. user@gmail.com">
+                        </div>
                         
-                        &lt;div class="mb-3"&gt;
-                            &lt;label class="form-label fw-medium"&gt;Category&lt;/label&gt;
-                            &lt;select class="form-select" id="category"&gt;
-                                &lt;option value=""&gt;Select category...&lt;/option&gt;
-                            &lt;/select&gt;
-                        &lt;/div&gt;
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Password (Optional)</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="password" placeholder="Enter password if applicable">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordField()">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-outline-primary" type="button" onclick="generatePassword()">
+                                    <i class="fas fa-magic"></i> Generate
+                                </button>
+                            </div>
+                        </div>
                         
-                        &lt;div class="mb-4"&gt;
-                            &lt;label class="form-label fw-medium"&gt;Notes&lt;/label&gt;
-                            &lt;textarea class="form-control" id="notes" rows="4" placeholder="Additional notes..."&gt;&lt;/textarea&gt;
-                        &lt;/div&gt;
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Category</label>
+                            <select class="form-select" id="category">
+                                <option value="">Select category...</option>
+                            </select>
+                        </div>
                         
-                        &lt;div class="mb-4"&gt;
-                            &lt;label class="form-label fw-medium"&gt;Master Password &lt;span class="text-danger"&gt;*&lt;/span&gt;&lt;/label&gt;
-                            &lt;input type="password" class="form-control" id="master-password" required placeholder="Enter your master password to encrypt"&gt;
-                        &lt;/div&gt;
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Algorithm</label>
+                            <input type="text" class="form-control" id="algorithm" value="AES-256-GCM" readonly disabled>
+                        </div>
                         
-                        &lt;div class="d-flex gap-2"&gt;
-                            &lt;button type="submit" class="btn btn-primary"&gt;
-                                &lt;i class="fas fa-save me-2"&gt;&lt;/i&gt;Save Item
-                            &lt;/button&gt;
-                            &lt;button type="button" class="btn btn-outline-secondary" onclick="window.location.href='vault.html'"&gt;
-                                &lt;i class="fas fa-times me-2"&gt;&lt;/i&gt;Cancel
-                            &lt;/button&gt;
-                        &lt;/div&gt;
-                    &lt;/form&gt;
-                &lt;/div&gt;
-            &lt;/div&gt;
-        &lt;/div&gt;
+                        <div class="mb-4">
+                            <label class="form-label fw-medium">Note / Ghi chú nhạy cảm</label>
+                            <textarea class="form-control" id="notes" rows="3" placeholder="Ghi chú nhạy cảm dùng để kiểm thử mã hóa"></textarea>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-medium">Master Password <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="master-password" required placeholder="Enter your master password to encrypt">
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Save to Vault
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="window.location.href='vault.html'">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
         
-        &lt;div id="footer-container"&gt;&lt;/div&gt;
-    &lt;/div&gt;
+        <div id="footer-container"></div>
+    </div>
     
-    &lt;script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"&gt;&lt;/script&gt;
-    &lt;script src="assets/js/app.js"&gt;&lt;/script&gt;
-    &lt;script src="assets/js/components.js"&gt;&lt;/script&gt;
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/app.js?v=3"></script>
+    <script src="assets/js/components.js?v=3"></script>
     
-    &lt;script&gt;
+    <script>
         let categories = [];
         
-        document.addEventListener('DOMContentLoaded', async () =&gt; {
+        document.addEventListener('DOMContentLoaded', async () => {
             components.load('add-vault');
             await loadCategories();
             
-            document.getElementById('add-vault-form').addEventListener('submit', async (e) =&gt; {
+            document.getElementById('add-vault-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
                 const masterPassword = document.getElementById('master-password').value;
@@ -99,16 +123,23 @@
                 
                 const data = {
                     item_name: document.getElementById('item-name').value,
-                    username: document.getElementById('username').value,
-                    password: document.getElementById('password').value,
+                    title: document.getElementById('item-name').value,
+                    full_name: document.getElementById('full-name') ? document.getElementById('full-name').value : null,
+                    email: document.getElementById('email') ? document.getElementById('email').value : null,
+                    phone: document.getElementById('phone') ? document.getElementById('phone').value : null,
+                    identity_number: document.getElementById('identity-number') ? document.getElementById('identity-number').value : null,
+                    username: document.getElementById('username') ? document.getElementById('username').value : null,
+                    password: document.getElementById('password') ? document.getElementById('password').value : "",
                     notes: document.getElementById('notes').value,
+                    note: document.getElementById('notes').value,
+                    algorithm: "AES-256-GCM",
                     category_id: selectedCategoryId ? parseInt(selectedCategoryId) : null
                 };
                 
                 loadingUtils.show();
                 try {
-                    await api.post(`/api/vault/items?master_password=${encodeURIComponent(masterPassword)}`, data);
-                    toastUtils.show('Vault item added successfully!', 'success');
+                    await api.post(`/api/vault/create?master_password=${encodeURIComponent(masterPassword)}`, data);
+                    toastUtils.show('Lưu vào Vault thành công!', 'success');
                     window.location.href = 'vault.html';
                 } catch (error) {
                     toastUtils.show(error.message, 'error');
@@ -122,8 +153,8 @@
             try {
                 categories = await api.get('/api/vault/categories');
                 const select = document.getElementById('category');
-                select.innerHTML = '&lt;option value=""&gt;Select category...&lt;/option&gt;' + 
-                    categories.map(cat =&gt; `&lt;option value="${cat.category_id}"&gt;${cat.category_name}&lt;/option&gt;`).join('');
+                select.innerHTML = '<option value="">Select category...</option>' + 
+                    categories.map(cat => `<option value="${cat.category_id}">${cat.category_name}</option>`).join('');
             } catch (error) {
                 toastUtils.show('Failed to load categories', 'error');
             }
@@ -135,13 +166,13 @@
         }
         
         function generatePassword() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&amp;*';
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
             let password = '';
-            for (let i = 0; i &lt; 16; i++) {
+            for (let i = 0; i < 16; i++) {
                 password += chars.charAt(Math.floor(Math.random() * chars.length));
             }
             document.getElementById('password').value = password;
         }
-    &lt;/script&gt;
-&lt;/body&gt;
-&lt;/html&gt;
+    </script>
+</body>
+</html>

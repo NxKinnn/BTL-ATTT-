@@ -12,4 +12,10 @@ build/
 vault.db
 .env
 .pytest_cache/
+venv/
+.venv/
+.env.local
+.vs/
+.vscode/
+*.log
 

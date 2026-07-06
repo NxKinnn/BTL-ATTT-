@@ -20,7 +20,12 @@ class VaultService:
         notes: Optional[str] = None,
         category_id: Optional[int] = None,
         ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
+        full_name: Optional[str] = None,
+        email: Optional[str] = None,
+        phone: Optional[str] = None,
+        identity_number: Optional[str] = None,
+        algorithm: Optional[str] = "AES-256-GCM"
     ) -> Optional[int]:
         """
         Add a new encrypted vault item
@@ -28,9 +33,16 @@ class VaultService:
         """
         # Create JSON object of sensitive data
         sensitive_data = {
-            "username": username,
-            "password": password,
-            "notes": notes
+            "title": item_name,
+            "full_name": full_name,
+            "email": email,
+            "phone": phone,
+            "identity_number": identity_number,
+            "username": username or "",
+            "password": password or "",
+            "notes": notes,
+            "note": notes,
+            "algorithm": algorithm or "AES-256-GCM"
         }
         sensitive_json = json.dumps(sensitive_data)
         
@@ -38,7 +50,10 @@ class VaultService:
         encrypted_data, iv, auth_tag = CryptoVault.encrypt_aes_gcm(sensitive_json, master_key)
         
         # Get default AES-GCM cipher config
-        cipher_configs = execute_query("SELECT cipher_config_id FROM cipher_configs WHERE algorithm_name = 'AES-GCM'")
+        algo_query = "AES-GCM" if "AES" in (algorithm or "") else "TripleDES"
+        cipher_configs = execute_query("SELECT cipher_config_id FROM cipher_configs WHERE algorithm_name LIKE ?", (f"%{algo_query}%",))
+        if not cipher_configs:
+            cipher_configs = execute_query("SELECT cipher_config_id FROM cipher_configs WHERE algorithm_name = 'AES-GCM'")
         if not cipher_configs:
             return None
         cipher_config_id = cipher_configs[0]['cipher_config_id']
@@ -59,14 +74,25 @@ class VaultService:
     def get_user_vault_items(user_id: int, role: str) -> List[Dict[str, Any]]:
         """
         Get list of vault items for a user (only metadata, no decrypted data)
+        Admin sees system-wide metadata and ciphertext preview
         """
-        if role != "User":
+        if role == "Admin":
+            return execute_query("""
+                SELECT vc.vault_id, vc.user_id, u.username as owner, u.username, vc.item_name as title, vc.item_name, vc.created_at, vc.updated_at, c.category_name, cc.algorithm_name as algorithm, SUBSTRING(vc.encrypted_password, 1, 32) + '...' as ciphertext_preview
+                FROM vault_credentials vc
+                LEFT JOIN users u ON vc.user_id = u.user_id
+                LEFT JOIN categories c ON vc.category_id = c.category_id
+                LEFT JOIN cipher_configs cc ON vc.cipher_config_id = cc.cipher_config_id
+                ORDER BY vc.created_at DESC
+            """)
+        elif role != "User":
             return []
         
         return execute_query("""
-            SELECT vc.vault_id, vc.user_id, vc.category_id, vc.item_name, vc.created_at, vc.updated_at, c.category_name
+            SELECT vc.vault_id, vc.user_id, vc.category_id, vc.item_name, vc.created_at, vc.updated_at, c.category_name, cc.algorithm_name as algorithm
             FROM vault_credentials vc
             LEFT JOIN categories c ON vc.category_id = c.category_id
+            LEFT JOIN cipher_configs cc ON vc.cipher_config_id = cc.cipher_config_id
             WHERE vc.user_id = ?
             ORDER BY vc.created_at DESC
         """, (user_id,))
@@ -90,8 +116,9 @@ class VaultService:
         
         # Get encrypted data
         items = execute_query("""
-            SELECT vc.vault_id, vc.user_id, vc.item_name, vc.encrypted_password, vc.iv, vc.auth_tag
+            SELECT vc.vault_id, vc.user_id, vc.item_name, vc.encrypted_password, vc.iv, vc.auth_tag, vc.created_at, cc.algorithm_name as algorithm
             FROM vault_credentials vc
+            LEFT JOIN cipher_configs cc ON vc.cipher_config_id = cc.cipher_config_id
             WHERE vc.vault_id = ? AND vc.user_id = ?
         """, (vault_id, user_id))
         
@@ -116,9 +143,17 @@ class VaultService:
             return {
                 "vault_id": item['vault_id'],
                 "item_name": item['item_name'],
-                "username": sensitive_data.get('username'),
-                "password": sensitive_data.get('password'),
-                "notes": sensitive_data.get('notes')
+                "title": sensitive_data.get('title') or item['item_name'],
+                "full_name": sensitive_data.get('full_name') or "",
+                "email": sensitive_data.get('email') or "",
+                "phone": sensitive_data.get('phone') or "",
+                "identity_number": sensitive_data.get('identity_number') or "",
+                "username": sensitive_data.get('username') or "",
+                "password": sensitive_data.get('password') or "",
+                "notes": sensitive_data.get('notes') or sensitive_data.get('note') or "",
+                "note": sensitive_data.get('note') or sensitive_data.get('notes') or "",
+                "algorithm": item.get('algorithm') or sensitive_data.get('algorithm') or "AES-256-GCM",
+                "created_at": str(item['created_at']) if item.get('created_at') else None
             }
         except (IntegrityError, DecryptionError, json.JSONDecodeError) as e:
             AuditService.log_event(user_id, 5, ip_address, user_agent, f"Decryption failed for vault item {vault_id}: {str(e)}")
@@ -135,7 +170,11 @@ class VaultService:
         password: Optional[str] = None,
         notes: Optional[str] = None,
         ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
+        full_name: Optional[str] = None,
+        email: Optional[str] = None,
+        phone: Optional[str] = None,
+        identity_number: Optional[str] = None
     ) -> bool:
         """
         Update a vault item
@@ -172,6 +211,17 @@ class VaultService:
                 updated_data['password'] = password
             if notes is not None:
                 updated_data['notes'] = notes
+                updated_data['note'] = notes
+            if full_name is not None:
+                updated_data['full_name'] = full_name
+            if email is not None:
+                updated_data['email'] = email
+            if phone is not None:
+                updated_data['phone'] = phone
+            if identity_number is not None:
+                updated_data['identity_number'] = identity_number
+            if item_name is not None:
+                updated_data['title'] = item_name
             
             # Re-encrypt
             updated_json = json.dumps(updated_data)

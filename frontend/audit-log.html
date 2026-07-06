@@ -27,6 +27,7 @@
                             <thead class="table-light">
                                 <tr>
                                     <th class="fw-medium">ID</th>
+                                    <th class="fw-medium">User</th>
                                     <th class="fw-medium">Action</th>
                                     <th class="fw-medium">Details</th>
                                     <th class="fw-medium">IP Address</th>
@@ -34,7 +35,7 @@
                                 </tr>
                             </thead>
                             <tbody id="audit-table-body">
-                                <tr><td colspan="5" class="text-center py-4 text-muted">Loading audit logs...</td></tr>
+                                <tr><td colspan="6" class="text-center py-4 text-muted">Loading audit logs...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -46,8 +47,8 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/js/app.js"></script>
-    <script src="assets/js/components.js"></script>
+    <script src="assets/js/app.js?v=3"></script>
+    <script src="assets/js/components.js?v=3"></script>
     
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
@@ -58,10 +59,24 @@
         async function loadAuditLogs() {
             loadingUtils.show();
             try {
-                const logs = await api.get('/api/audit/logs');
+                const user = jwtUtils.getUser() || {};
+                const isUserRole = user.role_name === 'User' || window.location.search.includes('mode=my-activity');
+                
+                if (isUserRole) {
+                    const h2 = document.querySelector('h2');
+                    if (h2) h2.innerHTML = '<i class="fas fa-user-clock text-primary me-2"></i>My Activity';
+                    const p = document.querySelector('.text-muted');
+                    if (p) p.textContent = 'Track your personal security events and activity history';
+                }
+                
+                const endpoint = isUserRole ? '/api/audit/my-activity' : '/api/audit/logs';
+                const logs = await api.get(endpoint);
                 renderAuditLogs(logs);
             } catch (error) {
-                toastUtils.show('Failed to load audit logs', 'error');
+                toastUtils.show('Failed to load logs. You may not have permission.', 'error');
+                if (error && error.status === 403) {
+                    setTimeout(() => window.location.href = isUserRole ? 'vault.html' : 'dashboard.html', 1500);
+                }
             } finally {
                 loadingUtils.hide();
             }
@@ -71,14 +86,15 @@
             const tbody = document.getElementById('audit-table-body');
             
             if (!logs.length) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">No audit logs found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No audit logs found</td></tr>';
                 return;
             }
             
             tbody.innerHTML = logs.map(log => `
                 <tr>
                     <td>${log.audit_id}</td>
-                    <td><span class="badge bg-primary">${log.action_name}</span></td>
+                    <td><span class="badge bg-secondary">${log.username || log.user_id || 'System'}</span></td>
+                    <td><span class="badge bg-primary">${log.action || log.action_name}</span></td>
                     <td>${log.action_details}</td>
                     <td>${log.ip_address || 'N/A'}</td>
                     <td>${new Date(log.created_at).toLocaleString()}</td>
