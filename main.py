@@ -334,7 +334,7 @@ async def delete_vault_item(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Vault item not found or deletion failed"
         )
-    return {"message": "Vault item deleted successfully"}
+    return {"success": True, "message": "Vault item deleted successfully"}
 
 @app.get("/api/vault/categories")
 async def get_categories():

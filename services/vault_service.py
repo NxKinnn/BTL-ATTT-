@@ -261,14 +261,20 @@ class VaultService:
         if role != "User":
             return False
         
-        count = execute_non_query("""
+        # First verify the item exists and belongs to this user
+        items = execute_query(
+            "SELECT vault_id FROM vault_credentials WHERE vault_id = ? AND user_id = ?",
+            (vault_id, user_id)
+        )
+        if not items:
+            return False
+        
+        execute_non_query("""
             DELETE FROM vault_credentials WHERE vault_id = ? AND user_id = ?
         """, (vault_id, user_id))
         
-        if count:
-            AuditService.log_event(user_id, 7, ip_address, user_agent, f"Deleted vault item: {vault_id}")
-            return True
-        return False
+        AuditService.log_event(user_id, 7, ip_address, user_agent, f"Deleted vault item: {vault_id}")
+        return True
     
     @staticmethod
     def get_categories() -> List[Dict[str, Any]]:
